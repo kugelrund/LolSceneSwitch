@@ -113,7 +113,7 @@ HANDLE GetProcessByName(TCHAR const * name, DWORD & pid)
 	if (pid != 0)
 	{
 		Log("GetProcessByName() - found LoL process with pid ", pid);
-		return OpenProcess(SYNCHRONIZE, FALSE, pid);
+		return OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
 	}
 	else
 	{
@@ -312,7 +312,6 @@ DWORD WINAPI LolSceneSwitch::ProcessMonitorThread(LPVOID lpParam)
 		HANDLE process = nullptr;
 		while (((process = GetProcessByName(TEXT("League of Legends.exe"), instance->lolPid)) == nullptr) && instance->runMonitoring)
 		{
-			GetSystemTimeAsFileTime(&instance->lolStartTime);
 			Sleep(intervall);
 		}
 		if (!instance->runMonitoring)
@@ -320,6 +319,10 @@ DWORD WINAPI LolSceneSwitch::ProcessMonitorThread(LPVOID lpParam)
 			return 1;
 		}
 		Log("ProcessMonitorThread() - League of Legends process started");
+
+		// get start time to check for correct log file
+		FILETIME temp;
+		GetProcessTimes(process, &instance->lolStartTime, &temp, &temp, &temp);
 		
 		// start log monitoring
 		instance->lolProcessClosed = false;
