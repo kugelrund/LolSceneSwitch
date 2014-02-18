@@ -267,7 +267,7 @@ void LolSceneSwitch::EndMonitoring()
 
 void LolSceneSwitch::ChangeScene() const
 {
-	if (currentGameScene != nullptr)
+	if (!currentGameScene.IsEmpty() && currentGameScene != OBSGetSceneName())
 	{
 		OBSSetScene(currentGameScene, true);
 	}
@@ -411,7 +411,10 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 	}
 	
 	HANDLE windowMonitor = nullptr;
-	if (ReadFile(file, nullptr, 0, nullptr, nullptr))
+
+	char testRead;
+	DWORD bytesRead;
+	if (ReadFile(file, &testRead, 1, &bytesRead, nullptr))
 	{
 		Log("LogMonitorThread() - started reading from log");
 
