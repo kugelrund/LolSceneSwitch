@@ -1,7 +1,6 @@
 #include "LolSceneSwitch.h"
 #include <tlhelp32.h>
 #include <tchar.h>
-#include <PathCch.h>
 #include <strsafe.h>
 #include "LolSceneSwitchDialog.h"
 #include "Log.h"
@@ -128,15 +127,18 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	creationTime->dwLowDateTime = 0;
 
 	TCHAR dirPath[MAX_PATH];
-	if (FAILED(PathCchCombine(dirPath, MAX_PATH, directory, TEXT("*"))))
+	size_t pathLength;
+	if (FAILED(StringCchLength(directory, MAX_PATH, &pathLength)) || pathLength + 3 > MAX_PATH)
 	{
 		return nullptr;
 	}
 
+	StringCchCopy(dirPath, MAX_PATH, directory);
+	StringCchCat(dirPath, MAX_PATH, TEXT("\\*"));
+
 	TCHAR newestLog[MAX_PATH];
 	newestLog[0] = '\0';
 	WIN32_FIND_DATA ffd;
-	TCHAR * ext;
 	size_t nameLength;
 
 	HANDLE searchHandle = FindFirstFile(dirPath, &ffd);
@@ -146,10 +148,8 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	}
 	do
 	{
-
-		if (SUCCEEDED(StringCchLength(ffd.cFileName, MAX_PATH, &nameLength)) &&
-			SUCCEEDED(PathCchFindExtension(ffd.cFileName, nameLength + 1, &ext)) && _tcscmp(ext, TEXT(".txt")) == 0 &&
-			CompareFileTime(&ffd.ftCreationTime, creationTime) == 1)
+		if (SUCCEEDED(StringCchLength(ffd.cFileName, MAX_PATH, &nameLength)) && 
+			_tcscmp(ffd.cFileName + nameLength - 4, TEXT(".txt")) == 0 && CompareFileTime(&ffd.ftCreationTime, creationTime) == 1)
 		{
 			StringCchCopy(newestLog, MAX_PATH, ffd.cFileName);
 			*creationTime = ffd.ftCreationTime;
@@ -159,10 +159,13 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	FindClose(searchHandle);
 
 	TCHAR path[MAX_PATH];
-	if (FAILED(PathCchCombine(path, MAX_PATH, directory, newestLog)))
+	if (pathLength + nameLength > MAX_PATH)
 	{
 		return nullptr;
 	}
+	StringCchCopy(path, MAX_PATH, directory);
+	StringCchCat(path, MAX_PATH, TEXT("\\"));
+	StringCchCat(path, MAX_PATH, newestLog);
 
 	Log("GetNewestLog() - found newest log file at ", path);
 	

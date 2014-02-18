@@ -1,15 +1,22 @@
 #include "LolSceneSwitchDialog.h"
 #include <ShlObj.h>
 #include <Shlwapi.h>
-#include <PathCch.h>
 #include <strsafe.h>
 #include "resource.h"
 #include "Log.h"
 
 bool IsValidLoLPath(TCHAR const * path)
 {
+	TCHAR const launcherName[] = TEXT("\\lol.launcher.exe");
+	size_t const nameLength = sizeof launcherName / sizeof *launcherName;
+	size_t pathLength;
+	
 	TCHAR launcherPath[MAX_PATH];
-	if (SUCCEEDED(PathCchCombine(launcherPath, MAX_PATH, path, TEXT("lol.launcher.exe"))) && PathFileExists(launcherPath))
+
+	if (SUCCEEDED(StringCchLength(path, MAX_PATH, &pathLength)) && ((pathLength + nameLength) <= MAX_PATH) &&
+		SUCCEEDED(StringCchCopy(launcherPath, MAX_PATH, path)) && 
+		SUCCEEDED(StringCchCat(launcherPath, MAX_PATH, launcherName)) &&
+		PathFileExists(launcherPath))
 	{
 		Log("IsValidLoLPath() - path was valid: ", path);
 		return true;
