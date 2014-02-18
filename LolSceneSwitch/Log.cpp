@@ -8,7 +8,7 @@ ofstream ofs;
 void InitLog(TCHAR const * pluginDataPath)
 {
 	TCHAR const LOGNAME[] = TEXT("\\LolSceneSwitch.log");
-	size_t const nameLength = sizeof LOGNAME / sizeof *LOGNAME;
+	size_t const nameLength = (sizeof LOGNAME) / (sizeof *LOGNAME);
 	size_t pathLength;
 
 	TCHAR logPath[MAX_PATH];
@@ -27,18 +27,27 @@ void CloseLog()
 
 void Log(char const * text)
 {
-	ofs << text << endl;
+	if (!ofs.bad())
+	{
+		ofs << text << endl;
+	}
 }
 
 void Log(char const * text, WCHAR const * value)
 {
-	size_t numOut;
-	char conv[256];
-	wcstombs_s(&numOut, conv, value, 256);
-	ofs << text << "'" << conv << "'" << endl;
+	if (!ofs.bad())
+	{
+		size_t numOut;
+		char conv[256];
+		wcstombs_s(&numOut, conv, value, 256);
+		ofs << text << "'" << conv << "'" << endl;
+	}
 }
 
 void Log(char const * text, int value)
 {
-	ofs << text << "'" << value << "'" << std::endl;
+	if (!ofs.bad())
+	{
+		ofs << text << "'" << value << "'" << endl;
+	}
 }

@@ -149,7 +149,8 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	do
 	{
 		if (SUCCEEDED(StringCchLength(ffd.cFileName, MAX_PATH, &nameLength)) && 
-			_tcscmp(ffd.cFileName + nameLength - 4, TEXT(".txt")) == 0 && CompareFileTime(&ffd.ftCreationTime, creationTime) == 1)
+			_tcscmp(ffd.cFileName + nameLength - 4, TEXT(".txt")) == 0 && 
+			CompareFileTime(&ffd.ftCreationTime, creationTime) == 1)
 		{
 			StringCchCopy(newestLog, MAX_PATH, ffd.cFileName);
 			*creationTime = ffd.ftCreationTime;
@@ -170,15 +171,15 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	Log("GetNewestLog() - found newest log file at ", path);
 	
 	return CreateFile(path,
-					  GENERIC_READ | GENERIC_WRITE,
-					  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+					  GENERIC_READ, // we only need to read
+					  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, // let LoL do whatever it pleases (Mundo!)
 					  nullptr,
 					  OPEN_EXISTING,
 					  FILE_ATTRIBUTE_NORMAL,
 					  nullptr);
 }
 
-HWND GetLoLWindow(DWORD pid, unsigned int intervall)
+HWND GetLolWindow(DWORD pid, unsigned int intervall)
 {
 	HWND hwndCurrent = GetWindow(GetDesktopWindow(), GW_CHILD);
 	DWORD pidCurrent = 0;
@@ -186,6 +187,8 @@ HWND GetLoLWindow(DWORD pid, unsigned int intervall)
 	do
 	{
 		GetWindowThreadProcessId(hwndCurrent, &pidCurrent);
+		// checking for GetWindowTextLength to not equal 0 is to ensure that we found 
+		// the actual game window, not the small icon that pops up just before the game starts
 		if (pidCurrent == pid && IsWindowVisible(hwndCurrent) && GetWindowTextLength(hwndCurrent) != 0)
 		{
 			Log("GetLoLWindow() - found LoL window");
@@ -240,9 +243,7 @@ LolSceneSwitchSettings & LolSceneSwitch::GetSettingsRef()
 
 void LolSceneSwitch::StartMonitoring()
 {
-	if (settings.enabled && (!settings.loadscreenScene[SINGLE].IsEmpty() || 
-							 !settings.gameScene[SINGLE].IsEmpty() || 
-							 !settings.endgameScene[SINGLE].IsEmpty()) && lolProcessMonitor == nullptr)
+	if (settings.enabled && lolProcessMonitor == nullptr)
 	{
 		runMonitoring = true;
 		lolProcessMonitor = CreateThread(nullptr, 0, ProcessMonitorThread, this, 0, nullptr);
@@ -293,6 +294,8 @@ void LolSceneSwitch::SetCurrentScene(String const & scene)
 	stateChanged = true;
 	if (settings.tabbedoutScene.IsEmpty())
 	{
+		// no tabbedoutScene means no WindowMonitorThread, therefore we have
+		// to chage the scene at this point
 		ChangeScene();
 	}
 	Log("SetCurrentScene() - set scene to ", scene);
@@ -396,6 +399,7 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 
 		if (CompareFileTime(&creationTime, &instance->lolStartTime) >= 0)
 		{
+			// log file was created after the process started, nice
 			break;
 		}
 
@@ -501,7 +505,7 @@ DWORD WINAPI LolSceneSwitch::WindowFocusMonitorThread(LPVOID lpParam)
 	LolSceneSwitch * instance = static_cast<LolSceneSwitch *>(lpParam);
 	unsigned int const intervall = instance->settings.intervall;
 
-	HWND window = GetLoLWindow(instance->lolPid, intervall);
+	HWND window = GetLolWindow(instance->lolPid, intervall);
 	bool focus = true;
 
 	while (!instance->lolProcessClosed)

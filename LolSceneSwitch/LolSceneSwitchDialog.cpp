@@ -8,7 +8,7 @@
 bool IsValidLoLPath(TCHAR const * path)
 {
 	TCHAR const launcherName[] = TEXT("\\lol.launcher.exe");
-	size_t const nameLength = sizeof launcherName / sizeof *launcherName;
+	size_t const nameLength = (sizeof launcherName) / (sizeof *launcherName);
 	size_t pathLength;
 	
 	TCHAR launcherPath[MAX_PATH];
