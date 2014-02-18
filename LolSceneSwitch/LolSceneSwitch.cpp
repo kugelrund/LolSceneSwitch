@@ -267,7 +267,7 @@ void LolSceneSwitch::EndMonitoring()
 
 void LolSceneSwitch::ChangeScene() const
 {
-	if (!currentGameScene.IsEmpty() && currentGameScene != OBSGetSceneName())
+	if (currentGameScene != OBSGetSceneName())
 	{
 		OBSSetScene(currentGameScene, true);
 	}
@@ -432,7 +432,7 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 			}
 			if (!settings.loadscreenScene[SINGLE].IsEmpty() && !settings.loadscreenMaps)
 			{
-				instance->SetCurrentScene(settings.loadscreenScene[0]);
+				instance->SetCurrentScene(settings.loadscreenScene[SINGLE]);
 			}
 		}
 
