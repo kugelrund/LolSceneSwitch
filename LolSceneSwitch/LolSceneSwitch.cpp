@@ -420,7 +420,7 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 
 		char const LOAD_STRING[] = "Set focus to app";
 		char const MAP_STRING[] = "Adding level zip file: Map";
-		char const START_STRING[] = "DrawSysInfo";
+		char const START_STRING[] = "HUDProcess";
 		char const END_STRING[] = "End game message processing!";
 
 		if ((!settings.tabbedoutScene.IsEmpty() || !settings.loadscreenScene[SINGLE].IsEmpty()) &&
