@@ -438,7 +438,7 @@ void LolSceneSwitchDialog::ApplySettings()
 {
 	settings.enabled = (IsDlgButtonChecked(hWndDialog, IDC_CHK_ENABLED) == BST_CHECKED);
 
-	WCHAR lolPath[MAX_PATH];
+	TCHAR lolPath[MAX_PATH];
 	GetDlgItemText(hWndDialog, IDC_TXT_LOLPATH, lolPath, MAX_PATH);
 	settings.lolPath = String(lolPath);
 
@@ -529,7 +529,7 @@ INT_PTR CALLBACK LolSceneSwitchDialog::ConfigDlgProc(HWND hWnd, UINT message, WP
 							if (success == FALSE || intervall < 50 || intervall > 5000)
 							{
 								MessageBox(hWnd,
-									L"The intervall has to be in a range from 100 to 5000 ms",
+									L"The intervall has to be in a range from 50 to 5000 ms",
 									L"Invalid Value",
 									MB_OK | MB_ICONERROR);
 								SetFocus(GetDlgItem(hWnd, IDC_TXT_INTERVALL));
