@@ -44,7 +44,7 @@ void LolSceneSwitchSettings::LoadSettings()
 	enabled = config.GetInt(TEXT("General"), TEXT("enabled"), enabled ? 1 : 0) != 0;
 	lolPath = config.GetString(TEXT("General"), TEXT("lolPath"), lolPath);
 	closedScene = config.GetString(TEXT("General"), TEXT("closedScene"), closedScene);
-	tabbedoutScene = config.GetString(TEXT("General"), TEXT("closedScene"), tabbedoutScene);
+	tabbedoutScene = config.GetString(TEXT("General"), TEXT("tabbedoutScene"), tabbedoutScene);
 	loadscreenScene[SUMMONERS_RIFT] = config.GetString(TEXT("General"), TEXT("loadscreenScene0"), loadscreenScene[SUMMONERS_RIFT]);
 	loadscreenScene[CRYSTAL_SCAR] = config.GetString(TEXT("General"), TEXT("loadscreenScene1"), loadscreenScene[CRYSTAL_SCAR]);
 	loadscreenScene[TWISTED_TREELINE] = config.GetString(TEXT("General"), TEXT("loadscreenScene2"), loadscreenScene[TWISTED_TREELINE]);
@@ -68,7 +68,7 @@ void LolSceneSwitchSettings::SaveSettings()
 	config.SetInt(TEXT("General"), TEXT("enabled"), enabled ? 1 : 0);
 	config.SetString(TEXT("General"), TEXT("lolPath"), lolPath);
 	config.SetString(TEXT("General"), TEXT("closedScene"), closedScene);
-	config.SetString(TEXT("General"), TEXT("closedScene"), tabbedoutScene);
+	config.SetString(TEXT("General"), TEXT("tabbedoutScene"), tabbedoutScene);
 	config.SetString(TEXT("General"), TEXT("loadscreenScene0"), loadscreenScene[SUMMONERS_RIFT]);
 	config.SetString(TEXT("General"), TEXT("loadscreenScene1"), loadscreenScene[CRYSTAL_SCAR]);
 	config.SetString(TEXT("General"), TEXT("loadscreenScene2"), loadscreenScene[TWISTED_TREELINE]);
