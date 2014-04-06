@@ -37,9 +37,9 @@ void Log(char const * text, WCHAR const * value)
 {
 	if (!ofs.bad())
 	{
-		size_t numOut;
+		size_t length;
 		char conv[256];
-		wcstombs_s(&numOut, conv, value, 256);
+		wcstombs_s(&length, conv, value, 256);
 		ofs << text << "'" << conv << "'" << endl;
 	}
 }

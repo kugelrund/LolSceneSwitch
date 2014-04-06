@@ -160,7 +160,7 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	FindClose(searchHandle);
 
 	TCHAR path[MAX_PATH];
-	if (pathLength + nameLength > MAX_PATH)
+	if (FAILED(StringCchLength(newestLog, MAX_PATH, &nameLength)) || pathLength + nameLength > MAX_PATH)
 	{
 		return nullptr;
 	}
@@ -267,11 +267,26 @@ void LolSceneSwitch::EndMonitoring()
 
 void LolSceneSwitch::ChangeScene() const
 {
-	if (currentGameScene != OBSGetSceneName())
+	if (currentGameScene != nullptr)
 	{
-		OBSSetScene(currentGameScene, true);
+		if (currentGameScene != OBSGetSceneName())
+		{
+			OBSSetScene(currentGameScene, true);
+			Log("ChangeScene() - changed scene to ", currentGameScene);
+		}
+		else
+		{
+			Log("ChangeScene() - scene was already correct");
+		}
 	}
-	Log("ChangeScene() - changed scene to ", currentGameScene);
+	else
+	{
+		// this should not happen anymore!!! if it happens, ChangeScene 
+		// is called by WindowMonitorThread but LogMonitorThread hasn't
+		// read anything in the log that lead to call SetCurrentScene
+		// which probably means that riot messed with the log files
+		Log("ChangeScene() - currentGameScene was null!!!");
+	}
 }
 
 void LolSceneSwitch::RevertScene() const
@@ -333,7 +348,14 @@ DWORD WINAPI LolSceneSwitch::ProcessMonitorThread(LPVOID lpParam)
 			// wait for league process to end
 			HANDLE waitObjects[2] = { process, instance->eventEndMonitoring };
 			WaitForMultipleObjects(2, waitObjects, FALSE, INFINITE);
-			Log("ProcessMonitorThread() - League of Legends process closed");
+			if (instance->runMonitoring)
+			{
+				Log("ProcessMonitorThread() - League of Legends process closed");
+			}
+			else
+			{
+				Log("ProcessMonitorThread() - event end monitoring sent");
+			}
 
 			// league process ended, shutting down monitoring threads
 			instance->lolProcessClosed = true;
@@ -419,7 +441,7 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 		Log("LogMonitorThread() - started reading from log");
 
 		char const LOAD_STRING[] = "Set focus to app";
-		char const MAP_STRING[] = "Adding level zip file: Map";
+		char const MAP_STRING[] = "Initializing GameModeComponents for mode=";
 		char const START_STRING[] = "HUDProcess";
 		char const END_STRING[] = "End game message processing!";
 
@@ -440,37 +462,32 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 		if ((settings.loadscreenMaps || settings.gameMaps || settings.endgameMaps) &&
 			instance->WaitForStringInLog(MAP_STRING, file))
 		{
-			DWORD bytesRead;
-			char buffer[3];
-			while (!instance->lolProcessClosed && (!ReadFile(file, buffer, 2, &bytesRead, nullptr) || bytesRead == 0))
+			char buffer[5];
+			while (!instance->lolProcessClosed && (!ReadFile(file, buffer, 4, &bytesRead, nullptr) || bytesRead == 0))
 			{
 				Sleep(intervall);
 			}
 			buffer[bytesRead] = '\0';
-			if (buffer[1] == '.')
-			{
-				buffer[1] = '\0';
-			}
 
-			unsigned int const mapNumber = atoi(buffer);
-			Log("LogMonitorThread() - mapNumber: ", mapNumber);
-			switch (mapNumber)
+			if (strcmp(buffer, "CLAS") == 0)
 			{
-				case 1:
-					mapIndex = SUMMONERS_RIFT;
-					break;
-				case 8:
-					mapIndex = CRYSTAL_SCAR;
-					break;
-				case 10:
-					mapIndex = TWISTED_TREELINE;
-					break;
-				case 12:
-					mapIndex = HOWLING_ABYSS;
-					break;
-				default:
-					mapIndex = SINGLE;
-					Log("LogMonitorThread() - Invalid map number!");
+				mapIndex = SUMMONERS_RIFT;
+				Log("LogMonitorThread() - recognized Summoners Rift");
+			}
+			else if (strcmp(buffer, "ODIN") == 0)
+			{
+				mapIndex = CRYSTAL_SCAR;
+				Log("LogMonitorThread() - recognized Crystal Scar");
+			}
+			else if (strcmp(buffer, "ARAM") == 0)
+			{
+				mapIndex = HOWLING_ABYSS;
+				Log("LogMonitorThread() - recognized Howling Abyss");
+			}
+			else
+			{
+				mapIndex = SINGLE;
+				Log("LogMonitorThread() - Invalid map!");
 			}
 
 			if (!settings.loadscreenScene[mapIndex].IsEmpty() && settings.loadscreenMaps)
