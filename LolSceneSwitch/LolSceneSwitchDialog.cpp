@@ -7,24 +7,41 @@
 
 bool IsValidLoLPath(TCHAR const * path)
 {
-	TCHAR const launcherName[] = TEXT("\\lol.launcher.exe");
-	size_t const nameLength = (sizeof launcherName) / (sizeof *launcherName);
+	TCHAR const logDir[] = TEXT("\\Logs\\Game - R3d Logs");
+	size_t nameLength = (sizeof logDir) / (sizeof *logDir);
 	size_t pathLength;
 	
-	TCHAR launcherPath[MAX_PATH];
+	TCHAR logPath[MAX_PATH];
 
 	if (SUCCEEDED(StringCchLength(path, MAX_PATH, &pathLength)) && ((pathLength + nameLength) <= MAX_PATH) &&
-		SUCCEEDED(StringCchCopy(launcherPath, MAX_PATH, path)) && 
-		SUCCEEDED(StringCchCat(launcherPath, MAX_PATH, launcherName)) &&
-		PathFileExists(launcherPath))
+		SUCCEEDED(StringCchCopy(logPath, MAX_PATH, path)) && 
+		SUCCEEDED(StringCchCat(logPath, MAX_PATH, logDir)) &&
+		PathFileExists(logPath))
 	{
 		Log("IsValidLoLPath() - path was valid: ", path);
 		return true;
 	}
 	else
 	{
-		Log("IsValidLoLPath() - path was invalid: ", path);
-		return false;
+		// if log dir was deleted or the game was never played
+		TCHAR const radsDir[] = TEXT("\\RADS");
+		nameLength = (sizeof radsDir) / (sizeof *radsDir);
+
+		TCHAR radsPath[MAX_PATH];
+
+		if (SUCCEEDED(StringCchLength(path, MAX_PATH, &pathLength)) && ((pathLength + nameLength) <= MAX_PATH) &&
+			SUCCEEDED(StringCchCopy(radsPath, MAX_PATH, path)) &&
+			SUCCEEDED(StringCchCat(radsPath, MAX_PATH, radsDir)) &&
+			PathFileExists(radsPath))
+		{
+			Log("IsValidLoLPath() - path was valid: ", path);
+			return true;
+		}
+		else
+		{
+			Log("IsValidLoLPath() - path was invalid: ", path);
+			return false;
+		}
 	}
 }
 

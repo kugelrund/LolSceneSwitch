@@ -130,7 +130,7 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	size_t pathLength;
 	if (FAILED(StringCchLength(directory, MAX_PATH, &pathLength)) || pathLength + 3 > MAX_PATH)
 	{
-		return nullptr;
+		return INVALID_HANDLE_VALUE;
 	}
 
 	StringCchCopy(dirPath, MAX_PATH, directory);
@@ -162,7 +162,7 @@ HANDLE GetNewestLog(TCHAR const * directory, LPFILETIME const creationTime)
 	TCHAR path[MAX_PATH];
 	if (FAILED(StringCchLength(newestLog, MAX_PATH, &nameLength)) || pathLength + nameLength > MAX_PATH)
 	{
-		return nullptr;
+		return INVALID_HANDLE_VALUE;
 	}
 	StringCchCopy(path, MAX_PATH, directory);
 	StringCchCat(path, MAX_PATH, TEXT("\\"));
@@ -416,19 +416,28 @@ DWORD WINAPI LolSceneSwitch::LogMonitorThread(LPVOID lpParam)
 	while (!instance->lolProcessClosed)
 	{
 		file = GetNewestLog(settings.lolPath + TEXT("\\Logs\\Game - R3d Logs"), &creationTime);
-		if (file == nullptr || file == INVALID_HANDLE_VALUE)
+		if (file == INVALID_HANDLE_VALUE)
 		{
 			Log("LogMonitorThread() - Couldn't open log file");
 			return 0;
 		}
-
-		if (CompareFileTime(&creationTime, &instance->lolStartTime) >= 0)
+		else if (file == nullptr)
 		{
-			// log file was created after the process started, nice
-			break;
+			Log("LogMonitorThread() - Couldn't find any log file, trying again");
+		}
+		else
+		{
+			if (CompareFileTime(&creationTime, &instance->lolStartTime) >= 0)
+			{
+				// log file was created after the process started, nice
+				break;
+			}
+			else
+			{
+				Log("LogMonitorThread() - found log file was to old, waiting for the current log to be created...");
+			}
 		}
 
-		Log("LogMonitorThread() - found log file was to old, waiting for the current log to be created...");
 		Sleep(intervall);
 	}
 	

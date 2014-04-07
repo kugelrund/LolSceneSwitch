@@ -37,10 +37,17 @@ void Log(char const * text, WCHAR const * value)
 {
 	if (!ofs.bad())
 	{
-		size_t length;
-		char conv[256];
-		wcstombs_s(&length, conv, value, 256);
-		ofs << text << "'" << conv << "'" << endl;
+		if (value != nullptr)
+		{
+			size_t length;
+			char conv[256];
+			wcstombs_s(&length, conv, value, 256);
+			ofs << text << "'" << conv << "'" << endl;
+		}
+		else
+		{
+			ofs << text << "'NULL'" << endl;
+		}
 	}
 }
 
