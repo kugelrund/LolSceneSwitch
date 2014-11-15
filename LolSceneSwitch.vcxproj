@@ -93,11 +93,11 @@
       <AdditionalIncludeDirectories>../../OBS-master/OBSApi</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib</AdditionalDependencies>
+      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib;</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>../../OBS-master/OBSApi/Debug</AdditionalLibraryDirectories>
     </Link>
@@ -110,11 +110,11 @@
       <AdditionalIncludeDirectories>../../OBS-master/OBSApi</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib</AdditionalDependencies>
+      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib;</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>../../OBS-master/OBSApi/x64/Debug</AdditionalLibraryDirectories>
     </Link>
@@ -130,14 +130,14 @@
       <AdditionalIncludeDirectories>../../OBS-master/OBSApi</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib</AdditionalDependencies>
+      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib;</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>../../OBS-master/OBSApi/Release</AdditionalLibraryDirectories>
     </Link>
@@ -156,14 +156,14 @@
       <AdditionalIncludeDirectories>../../OBS-master/OBSApi</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib</AdditionalDependencies>
+      <AdditionalDependencies>OBSApi.lib;User32.lib;shlwapi.lib;ole32.lib;</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>../../OBS-master/OBSApi/x64/Release</AdditionalLibraryDirectories>
     </Link>
@@ -172,20 +172,26 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="LolSceneSwitchDialog.h" />
+    <ClInclude Include="SettingsDialog.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LolSceneSwitch.h" />
-    <ClInclude Include="LolSceneSwitchSettings.h" />
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="Settings.h" />
+    <ClInclude Include="MapsDialog.h" />
+    <ClInclude Include="PointerPath.h" />
+    <ClInclude Include="resource_main.h" />
+    <ClInclude Include="resource_maps.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LolSceneSwitchDialog.cpp" />
+    <ClCompile Include="SettingsDialog.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LolSceneSwitch.cpp" />
-    <ClCompile Include="LolSceneSwitchSettings.cpp" />
+    <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="MapsDialog.cpp" />
+    <ClCompile Include="PointerPath.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LolSceneSwitch.rc" />
+    <ResourceCompile Include="SettingsDialog.rc" />
+    <ResourceCompile Include="MapsDialog.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,9 +1,12 @@
-#include "LolSceneSwitchDialog.h"
+#include "SettingsDialog.h"
 #include <ShlObj.h>
 #include <Shlwapi.h>
 #include <strsafe.h>
-#include "resource.h"
+#include "resource_main.h"
+#include "MapsDialog.h"
 #include "Log.h"
+
+
 
 bool IsValidLoLPath(TCHAR const * path)
 {
@@ -50,17 +53,13 @@ class OpenFolderDialog
 private:
 
 	IFileDialog *pfd;
-
 	IFileDialogEvents *pfde;
-
 	DWORD dwCookie;
 
 public:
 
 	OpenFolderDialog(void);
-
 	~OpenFolderDialog(void);
-
 	bool Show(WCHAR * pszFilePath, HWND hWndParent);
 };
 
@@ -213,190 +212,199 @@ OpenFolderDialog::~OpenFolderDialog(void)
 
 
 
-
-
-enum SceneSelections
+SceneSelector::SceneSelector() :
+chkEnabled(nullptr),
+cmbScene(nullptr),
+chkMaps(nullptr),
+btnMaps(nullptr),
+mapsAvail(false),
+scenes()
 {
-	CLOSED_SCENE = 0, TABBEDOUT_SCENE = 1, LOADSCREEN_SCENE = 2, GAME_SCENE = 3, ENDGAME_SCENE = 4
-};
+}
 
 
-
-
-
-SceneSelector::SceneSelector(HWND hWndDialog, HWND chkEnabled, HWND cmbScene) :
+SceneSelector::SceneSelector(_In_ HWND chkEnabled, _In_ HWND cmbScene) :
 							 chkEnabled(chkEnabled),
-							 chkUseMultiple(nullptr),
-							 cmbScenes(new HWND[1]),
-							 lblScenes(nullptr),
-							 length(1),
-							 multiple(false)
+							 cmbScene(cmbScene),
+							 chkMaps(nullptr),
+							 btnMaps(nullptr),
+							 mapsAvail(false),
+							 scenes()
 {
-	cmbScenes[0] = cmbScene;
 }
 
-SceneSelector::SceneSelector(HWND hWndDialog, HWND chkEnabled, HWND chkUseMultiple, int startID, unsigned int length) :
+
+SceneSelector::SceneSelector(_In_ HWND chkEnabled, _In_ HWND cmbScene, _In_ HWND chkMaps, _In_ HWND btnMaps) :
 							 chkEnabled(chkEnabled),
-							 chkUseMultiple(chkUseMultiple),
-							 cmbScenes(new HWND[length]),
-							 lblScenes(new HWND[length]),
-							 length(length),
-							 multiple(true)
+							 cmbScene(cmbScene),
+							 chkMaps(chkMaps),
+							 btnMaps(btnMaps),
+							 mapsAvail(true),
+							 scenes()
 {
-	for (unsigned int i = 0; i < length; ++i)
-	{
-		cmbScenes[i] = GetDlgItem(hWndDialog, startID + 2 * i);
-		lblScenes[i] = GetDlgItem(hWndDialog, startID + 2 * i + 1);
-	}
-	AddScene(L"");
 }
 
-SceneSelector::~SceneSelector()
-{
-	delete[] cmbScenes;
-	if (multiple)
-	{
-		delete[] lblScenes;
-	}
-}
 
 void SceneSelector::EnableControls(bool disableAll) const
 {
 	if (disableAll)
 	{
 		EnableWindow(chkEnabled, FALSE);
-		if (!multiple)
-		{
-			EnableWindow(cmbScenes[0], FALSE);
-		}
-		else
-		{
-			EnableWindow(chkUseMultiple, FALSE);
-			for (unsigned int i = 0; i < length; ++i)
-			{
-				EnableWindow(cmbScenes[i], FALSE);
-				EnableWindow(lblScenes[i], FALSE);
-			}
+		EnableWindow(cmbScene, FALSE);
+		if (mapsAvail)
+		{ 
+			EnableWindow(chkMaps, FALSE);
+			EnableWindow(btnMaps, FALSE);
 		}
 	}
 	else
 	{
 		EnableWindow(chkEnabled, TRUE);
-		BOOL const enableControls = SendMessage(chkEnabled, BM_GETCHECK, 0, 0) == BST_CHECKED;
-		if (!multiple)
+		BOOL const enableControls = (SendMessage(chkEnabled, BM_GETCHECK, 0, 0) == BST_CHECKED);
+
+		EnableWindow(cmbScene, enableControls);
+		if (mapsAvail)
 		{
-			EnableWindow(cmbScenes[0], enableControls);
-		}
-		else
-		{
-			EnableWindow(chkUseMultiple, TRUE);
-			for (unsigned int i = 0; i < length; ++i)
+			EnableWindow(chkMaps, enableControls);
+			if (enableControls)
 			{
-				EnableWindow(cmbScenes[i], enableControls);
-				EnableWindow(lblScenes[i], enableControls);
+				if (SendMessage(chkMaps, BM_GETCHECK, 0, 0) == BST_CHECKED)
+				{
+					EnableWindow(cmbScene, FALSE);
+					EnableWindow(btnMaps, TRUE);
+				}
+				else
+				{
+					EnableWindow(btnMaps, FALSE);
+				}
 			}
-
-			EnableWindow(chkUseMultiple, enableControls);
-			BOOL const showControls = (SendMessage(chkUseMultiple, BM_GETCHECK, 0, 0) == BST_CHECKED) ? SW_SHOW : SW_HIDE;
-			ShowWindow(lblScenes[0], showControls);
-			for (unsigned int i = 1; i < length; ++i)
+			else
 			{
-				ShowWindow(cmbScenes[i], showControls);
-				ShowWindow(lblScenes[i], showControls);
+				EnableWindow(btnMaps, FALSE);
 			}
 		}
 	}
 }
 
-void SceneSelector::SetEnabled() const
+
+void SceneSelector::SetMapScenes(MapScenes scenes)
 {
-	bool enabled = !GetCBText(cmbScenes[0], CB_ERR).IsEmpty();
-	SendMessage(chkEnabled, BM_SETCHECK, enabled ? BST_CHECKED : BST_UNCHECKED, 0);
+	this->scenes.mapScenes = scenes;
 }
 
-void SceneSelector::SetEnabled(bool useMultiple) const
+
+MapScenes SceneSelector::GetMapScenes()
 {
-	bool enabled = false;
-	for (unsigned int i = 0; i < length; ++i)
+	return scenes.mapScenes;
+}
+
+
+void SceneSelector::AddScenes(std::vector<CTSTR> scenes) const
+{
+	for (auto it = scenes.begin(); it != scenes.end(); ++it)
 	{
-		if (!GetCBText(cmbScenes[i], CB_ERR).IsEmpty())
+		SendMessage(cmbScene, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(*it));
+	}
+}
+
+
+void SceneSelector::LoadSettings(StateScenes scenes)
+{
+	this->scenes = scenes;
+	bool enabled = (!scenes.useMaps && !scenes.single.IsEmpty()) 
+				    || (scenes.useMaps && !scenes.mapScenes.IsEmpty());
+
+	WPARAM index = SendMessage(cmbScene, CB_FINDSTRINGEXACT, -1, 
+							   reinterpret_cast<LPARAM>(static_cast<CTSTR>(scenes.single)));
+	SendMessage(cmbScene, CB_SETCURSEL, index, 0);
+	if (mapsAvail)
+	{
+		SendMessage(chkMaps, BM_SETCHECK, scenes.useMaps ? BST_CHECKED : BST_UNCHECKED, 0);
+		if (scenes.useMaps)
 		{
-			enabled = true;
-			break;
+			enabled = !scenes.mapScenes.IsEmpty();
 		}
 	}
-	SendMessage(chkEnabled, BM_SETCHECK, enabled ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendMessage(chkUseMultiple, BM_SETCHECK, useMultiple ? BST_CHECKED : BST_UNCHECKED, 0);
+
+	SendMessage(chkEnabled, BM_SETCHECK, enabled, 0);
 }
 
-void SceneSelector::AddScene(CTSTR scene) const
-{
-	for (unsigned int i = 0; i < length; ++i)
-	{
-		SendMessage(cmbScenes[i], CB_ADDSTRING, 0, reinterpret_cast<LPARAM> (scene));
-	}
-}
 
-void SceneSelector::SetSelectedScenes(String const * scenes) const
-{
-	for (unsigned int i = 0; i < length; ++i)
-	{
-		SendMessage(cmbScenes[i], CB_SETCURSEL, 
-					SendMessage(cmbScenes[i], CB_FINDSTRINGEXACT, -1, reinterpret_cast<LPARAM>(static_cast<CTSTR>(scenes[i]))), 0);
-	}
-}
-
-void SceneSelector::GetSelectedScenes(String * scenes) const
+void SceneSelector::GetSettings(_Inout_ StateScenes &scenes)
 {
 	if (SendMessage(chkEnabled, BM_GETCHECK, 0, 0) == BST_CHECKED)
 	{
-		for (unsigned int i = 0; i < length; ++i)
+		scenes.single = GetCBText(cmbScene, CB_ERR);
+		if (mapsAvail)
 		{
-			scenes[i] = GetCBText(cmbScenes[i], CB_ERR);
+			scenes.useMaps = (SendMessage(chkMaps, BM_GETCHECK, 0, 0) == BST_CHECKED);
+			scenes.mapScenes = this->scenes.mapScenes;
 		}
 	}
 	else
 	{
-		for (unsigned int i = 0; i < length; ++i)
+		scenes.single = String();
+		if (mapsAvail)
 		{
-			scenes[i] = String();
+			scenes.mapScenes = this->scenes.mapScenes;
 		}
 	}
 }
 
-bool SceneSelector::UseMultiple() const
-{
-	return (SendMessage(chkUseMultiple, BM_GETCHECK, 0, 0) == BST_CHECKED);
-}
 
 
-
-
-
-LolSceneSwitchDialog::LolSceneSwitchDialog(LolSceneSwitchSettings & settings) : settings(settings), sceneSelectors()
+SettingsDialog::SettingsDialog(_In_ Settings &settings) : settings(settings)
 {
 }
 
-void LolSceneSwitchDialog::Show(HWND hWnd, HINSTANCE hInstDLL) const
+
+void SettingsDialog::Show(_In_ HWND hWnd, _In_ HINSTANCE hInstDLL)
 {
-	DialogBoxParam(hInstDLL, MAKEINTRESOURCE(IDD_CONFIGDIALOG), hWnd, ConfigDlgProc, reinterpret_cast<LPARAM>(this));
+	this->hInstDLL = hInstDLL;
+	DialogBoxParam(hInstDLL, MAKEINTRESOURCE(IDD_SETTINGSDIALOG), hWnd, ConfigDlgProc, reinterpret_cast<LPARAM>(this));
 }
 
-void LolSceneSwitchDialog::GetControls(HWND hWnd)
+
+void SettingsDialog::GetControls(_In_ HWND hWnd)
 {
 	hWndDialog = hWnd;
-	sceneSelectors.reserve(5);
-	sceneSelectors.emplace_back(hWnd, GetDlgItem(hWnd, IDC_CHK_CLOSEDSCENE), GetDlgItem(hWnd, IDC_CMB_CLOSEDSCENE));
-	sceneSelectors.emplace_back(hWnd, GetDlgItem(hWnd, IDC_CHK_TABBEDOUTSCENE), GetDlgItem(hWnd, IDC_CMB_TABBEDOUTSCENE));
-	sceneSelectors.emplace_back(hWnd, GetDlgItem(hWnd, IDC_CHK_LOADSCREENSCENE), GetDlgItem(hWnd, IDC_CHK_LOADSCREENMAPS),
-								IDC_CMB_LOADSCREENSCENE0, 4);
-	sceneSelectors.emplace_back(hWnd, GetDlgItem(hWnd, IDC_CHK_GAMESCENE), GetDlgItem(hWnd, IDC_CHK_GAMEMAPS),
-								IDC_CMB_GAMESCENE0, 4);
-	sceneSelectors.emplace_back(hWnd, GetDlgItem(hWnd, IDC_CHK_ENDGAMESCENE), GetDlgItem(hWnd, IDC_CHK_ENDGAMEMAPS),
-								IDC_CMB_ENDGAMESCENE0, 4);
+	SceneSelector clientScene(GetDlgItem(hWnd, IDC_CHK_CLIENTSCENE), GetDlgItem(hWnd, IDC_CMB_CLIENTSCENE));
+	SceneSelector clientoutScene(GetDlgItem(hWnd, IDC_CHK_CLIENTOUTSCENE), GetDlgItem(hWnd, IDC_CMB_CLIENTOUTSCENE));
+	SceneSelector champselectScene(GetDlgItem(hWnd, IDC_CHK_CHAMPSELECTSCENE), GetDlgItem(hWnd, IDC_CMB_CHAMPSELECTSCENE));
+	SceneSelector postgameScene(GetDlgItem(hWnd, IDC_CHK_POSTGAMESCENE), GetDlgItem(hWnd, IDC_CMB_POSTGAMESCENE));
+	SceneSelector loadscreenScene(GetDlgItem(hWnd, IDC_CHK_LOADSCREENSCENE), GetDlgItem(hWnd, IDC_CMB_LOADSCREENSCENE),
+								  GetDlgItem(hWnd, IDC_CHK_LOADSCREENMAPS), GetDlgItem(hWnd, IDC_BTN_LOADSCREENMAPS));
+	SceneSelector gameScene(GetDlgItem(hWnd, IDC_CHK_GAMESCENE), GetDlgItem(hWnd, IDC_CMB_GAMESCENE),
+							GetDlgItem(hWnd, IDC_CHK_GAMEMAPS), GetDlgItem(hWnd, IDC_BTN_GAMEMAPS));
+	SceneSelector endgameScene(GetDlgItem(hWnd, IDC_CHK_ENDGAMESCENE), GetDlgItem(hWnd, IDC_CMB_ENDGAMESCENE),
+							   GetDlgItem(hWnd, IDC_CHK_ENDGAMEMAPS), GetDlgItem(hWnd, IDC_BTN_ENDGAMEMAPS));
+	SceneSelector gameoutScene(GetDlgItem(hWnd, IDC_CHK_GAMEOUTSCENE), GetDlgItem(hWnd, IDC_CMB_GAMEOUTSCENE));
+	selectors.emplace(State::CLIENT, clientScene);
+	selectors.emplace(State::CLIENTOUT, clientoutScene);
+	selectors.emplace(State::CHAMPSELECT, champselectScene);
+	selectors.emplace(State::POSTGAME, postgameScene);
+	selectors.emplace(State::LOADSCREEN, loadscreenScene);
+	selectors.emplace(State::GAME, gameScene);
+	selectors.emplace(State::ENDGAME, endgameScene);
+	selectors.emplace(State::GAMEOUT, gameoutScene);
+	selectorIndices.emplace(IDC_CHK_CLIENTSCENE, State::CLIENT);
+	selectorIndices.emplace(IDC_CHK_CLIENTOUTSCENE, State::CLIENTOUT);
+	selectorIndices.emplace(IDC_CHK_CHAMPSELECTSCENE, State::CHAMPSELECT);
+	selectorIndices.emplace(IDC_CHK_POSTGAMESCENE, State::POSTGAME);
+	selectorIndices.emplace(IDC_CHK_LOADSCREENSCENE, State::LOADSCREEN);
+	selectorIndices.emplace(IDC_CHK_LOADSCREENMAPS, State::LOADSCREEN);
+	selectorIndices.emplace(IDC_BTN_LOADSCREENMAPS, State::LOADSCREEN);
+	selectorIndices.emplace(IDC_CHK_GAMESCENE, State::GAME);
+	selectorIndices.emplace(IDC_CHK_GAMEMAPS, State::GAME);
+	selectorIndices.emplace(IDC_BTN_GAMEMAPS, State::GAME);
+	selectorIndices.emplace(IDC_CHK_ENDGAMESCENE, State::ENDGAME);
+	selectorIndices.emplace(IDC_CHK_ENDGAMEMAPS, State::ENDGAME);
+	selectorIndices.emplace(IDC_BTN_ENDGAMEMAPS, State::ENDGAME);
+	selectorIndices.emplace(IDC_CHK_GAMEOUTSCENE, State::GAMEOUT);
 }
 
-void LolSceneSwitchDialog::EnableControls() const
+
+void SettingsDialog::EnableControls() const
 {
 	BOOL const enableControls = IsDlgButtonChecked(hWndDialog, IDC_CHK_ENABLED) == BST_CHECKED ? TRUE : FALSE;
 
@@ -407,80 +415,65 @@ void LolSceneSwitchDialog::EnableControls() const
 	EnableWindow(GetDlgItem(hWndDialog, IDC_LBL_INTERVALL), enableControls);
 	EnableWindow(GetDlgItem(hWndDialog, IDC_TXT_INTERVALL), enableControls);
 
-	for (auto it = sceneSelectors.begin(); it != sceneSelectors.end(); ++it)
+	for (auto selector : selectors)
 	{
-		it->EnableControls(enableControls == FALSE);
+		selector.second.EnableControls(enableControls == FALSE);
 	}
 }
 
-void LolSceneSwitchDialog::LoadSettings() const
+
+void SettingsDialog::LoadSettings()
 {
 	CheckDlgButton(hWndDialog, IDC_CHK_ENABLED, settings.enabled ? BST_CHECKED : BST_UNCHECKED);
-	
 	SetDlgItemText(hWndDialog, IDC_TXT_LOLPATH, settings.lolPath);
 
 	XElement* sceneList = OBSGetSceneListElement();
 	if (sceneList)
 	{
-		CTSTR sceneName = TEXT("");
 		unsigned int const len = sceneList->NumElements();
+		scenes.reserve(len);
+
+		CTSTR sceneName = TEXT("");
 		for (unsigned int i = 0; i < len; ++i)
 		{
 			sceneName = (sceneList->GetElementByID(i))->GetName();
-			for (auto it = sceneSelectors.begin(); it != sceneSelectors.end(); ++it)
-			{
-				it->AddScene(sceneName);
-			}
+			scenes.emplace_back(sceneName);
 		}
 	}
-	
-	sceneSelectors[CLOSED_SCENE].SetSelectedScenes(&settings.closedScene);
-	sceneSelectors[TABBEDOUT_SCENE].SetSelectedScenes(&settings.tabbedoutScene);
-	sceneSelectors[LOADSCREEN_SCENE].SetSelectedScenes(settings.loadscreenScene);
-	sceneSelectors[GAME_SCENE].SetSelectedScenes(settings.gameScene);
-	sceneSelectors[ENDGAME_SCENE].SetSelectedScenes(settings.endgameScene);
 
-	sceneSelectors[CLOSED_SCENE].SetEnabled();
-	sceneSelectors[TABBEDOUT_SCENE].SetEnabled();
-	sceneSelectors[LOADSCREEN_SCENE].SetEnabled(settings.loadscreenMaps);
-	sceneSelectors[GAME_SCENE].SetEnabled(settings.gameMaps);
-	sceneSelectors[ENDGAME_SCENE].SetEnabled(settings.endgameMaps);
+	for (auto &selector : selectors)
+	{
+		selector.second.AddScenes(scenes);
+		selector.second.LoadSettings(settings.scenes[selector.first]);
+	}
 	
 	SetDlgItemInt(hWndDialog, IDC_TXT_INTERVALL, settings.intervall, FALSE);
-
 	EnableControls();
 }
 
-void LolSceneSwitchDialog::ApplySettings()
+void SettingsDialog::ApplySettings()
 {
 	settings.enabled = (IsDlgButtonChecked(hWndDialog, IDC_CHK_ENABLED) == BST_CHECKED);
-
 	TCHAR lolPath[MAX_PATH];
 	GetDlgItemText(hWndDialog, IDC_TXT_LOLPATH, lolPath, MAX_PATH);
 	settings.lolPath = String(lolPath);
 
-	sceneSelectors[CLOSED_SCENE].GetSelectedScenes(&settings.closedScene);
-	sceneSelectors[TABBEDOUT_SCENE].GetSelectedScenes(&settings.tabbedoutScene);
-	sceneSelectors[LOADSCREEN_SCENE].GetSelectedScenes(settings.loadscreenScene);
-	sceneSelectors[GAME_SCENE].GetSelectedScenes(settings.gameScene);
-	sceneSelectors[ENDGAME_SCENE].GetSelectedScenes(settings.endgameScene);
-	
-	settings.loadscreenMaps = sceneSelectors[LOADSCREEN_SCENE].UseMultiple();
-	settings.gameMaps = sceneSelectors[GAME_SCENE].UseMultiple();
-	settings.endgameMaps = sceneSelectors[ENDGAME_SCENE].UseMultiple();
+	for (auto selector : selectors)
+	{
+		selector.second.GetSettings(settings.scenes[selector.first]);
+	}
 
 	settings.intervall = GetDlgItemInt(hWndDialog, IDC_TXT_INTERVALL, nullptr, FALSE);
-
 	settings.SaveSettings();
 }
 
-INT_PTR CALLBACK LolSceneSwitchDialog::ConfigDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK SettingsDialog::ConfigDlgProc(_In_ HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
 		case WM_INITDIALOG:
 		{
-			LolSceneSwitchDialog * dialog = (LolSceneSwitchDialog *)lParam;
+			SettingsDialog * dialog = reinterpret_cast<SettingsDialog *>(lParam);
 			SetWindowLongPtr(hWnd, DWLP_USER, lParam);
 			dialog->GetControls(hWnd);
 			dialog->LoadSettings();
@@ -488,7 +481,7 @@ INT_PTR CALLBACK LolSceneSwitchDialog::ConfigDlgProc(HWND hWnd, UINT message, WP
 		}
 		case WM_COMMAND:
 		{
-			LolSceneSwitchDialog * dialog = (LolSceneSwitchDialog *)GetWindowLongPtr(hWnd, DWLP_USER);
+			SettingsDialog * dialog = reinterpret_cast<SettingsDialog *>(GetWindowLongPtr(hWnd, DWLP_USER));
 			switch (LOWORD(wParam))
 			{
 				case IDOK:
@@ -518,32 +511,14 @@ INT_PTR CALLBACK LolSceneSwitchDialog::ConfigDlgProc(HWND hWnd, UINT message, WP
 				case IDC_CHK_ENABLED:
 					dialog->EnableControls();
 					break;
-				case IDC_CHK_CLOSEDSCENE:
-					dialog->sceneSelectors[CLOSED_SCENE].EnableControls(false);
-					break;
-				case IDC_CHK_TABBEDOUTSCENE:
-					dialog->sceneSelectors[TABBEDOUT_SCENE].EnableControls(false);
-					break;
-				case IDC_CHK_LOADSCREENSCENE:
-				case IDC_CHK_LOADSCREENMAPS:
-					dialog->sceneSelectors[LOADSCREEN_SCENE].EnableControls(false);
-					break;
-				case IDC_CHK_GAMESCENE:
-				case IDC_CHK_GAMEMAPS:
-					dialog->sceneSelectors[GAME_SCENE].EnableControls(false);
-					break;
-				case IDC_CHK_ENDGAMESCENE:
-				case IDC_CHK_ENDGAMEMAPS:
-					dialog->sceneSelectors[ENDGAME_SCENE].EnableControls(false);
-					break;
 				case IDC_TXT_INTERVALL:
 					switch (HIWORD(wParam))
 					{
 						case EN_KILLFOCUS:
 						{
 							BOOL success = FALSE;
-							unsigned int const intervall = GetDlgItemInt(hWnd, IDC_TXT_INTERVALL, &success, FALSE);
-							if (success == FALSE || intervall < 50 || intervall > 5000)
+							unsigned int const INTERVALL = GetDlgItemInt(hWnd, IDC_TXT_INTERVALL, &success, FALSE);
+							if (success == FALSE || INTERVALL < 50 || INTERVALL > 5000)
 							{
 								MessageBox(hWnd,
 									L"The intervall has to be in a range from 50 to 5000 ms",
@@ -555,10 +530,25 @@ INT_PTR CALLBACK LolSceneSwitchDialog::ConfigDlgProc(HWND hWnd, UINT message, WP
 						}
 					}
 					break;
+				case IDC_BTN_LOADSCREENMAPS:
+				case IDC_BTN_GAMEMAPS:
+				case IDC_BTN_ENDGAMEMAPS:
+				{
+					SceneSelector * selector = &dialog->selectors[dialog->selectorIndices[LOWORD(wParam)]];
+					MapsDialog mapsDialog(dialog->scenes, selector->GetMapScenes());
+					MapScenes scenes;
+					if (mapsDialog.Show(dialog->hInstDLL, hWnd, &scenes))
+					{
+						selector->SetMapScenes(scenes);
+					}
+					break;
+				}
+				default:
+					dialog->selectors[dialog->selectorIndices[LOWORD(wParam)]].EnableControls(false);
+					break;
 			}
 			break;
 		}
 	}
-
 	return 0;
 }

@@ -7,20 +7,28 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="Log.h" />
-    <ClInclude Include="LolSceneSwitchSettings.h" />
-    <ClInclude Include="LolSceneSwitchDialog.h" />
     <ClInclude Include="LolSceneSwitch.h" />
+    <ClInclude Include="MapsDialog.h" />
+    <ClInclude Include="PointerPath.h" />
+    <ClInclude Include="resource_maps.h" />
+    <ClInclude Include="resource_main.h" />
+    <ClInclude Include="Settings.h" />
+    <ClInclude Include="SettingsDialog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log.cpp" />
-    <ClCompile Include="LolSceneSwitchSettings.cpp" />
-    <ClCompile Include="LolSceneSwitchDialog.cpp" />
     <ClCompile Include="LolSceneSwitch.cpp" />
+    <ClCompile Include="MapsDialog.cpp" />
+    <ClCompile Include="PointerPath.cpp" />
+    <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="SettingsDialog.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LolSceneSwitch.rc">
+    <ResourceCompile Include="MapsDialog.rc">
+      <Filter>Ressourcendateien</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="SettingsDialog.rc">
       <Filter>Ressourcendateien</Filter>
     </ResourceCompile>
   </ItemGroup>
