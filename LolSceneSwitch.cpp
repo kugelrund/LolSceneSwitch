@@ -582,7 +582,11 @@ State LogReader::GetState()
 			if ((found = strstr(buffer, searchStrings[index])) != nullptr)
 			{
 				SetFilePointer(file, -static_cast<signed int>(strlen(searchStrings[index])) + 1, nullptr, FILE_CURRENT);
-				++index;
+				index += 1;
+				if (index >= searchStrings.size())
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -605,6 +609,6 @@ State LogReader::GetState()
 	}
 	else
 	{
-		return State::CHAMPSELECT;
+		return State::GAMEOUT;
 	}
 }
