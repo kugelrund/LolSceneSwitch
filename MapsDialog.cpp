@@ -59,7 +59,7 @@ void MapsDialog::ApplyScenes()
 {
 	selectedScenes.summonersRift = GetCBText(cmbSummonersRift, CB_ERR);
 	selectedScenes.crystalScar = GetCBText(cmbCrystalScar, CB_ERR);
-	selectedScenes.twistedTreeline = GetCBText(cmbHowlingAbyss, CB_ERR);
+	selectedScenes.twistedTreeline = GetCBText(cmbTwistedTreeline, CB_ERR);
 	selectedScenes.howlingAbyss = GetCBText(cmbHowlingAbyss, CB_ERR);
 }
 
