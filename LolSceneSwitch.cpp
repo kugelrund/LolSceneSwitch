@@ -401,7 +401,8 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 	bool postGame = false;
 	State state = State::CLIENTOUT;
 	State oldState = State::CLIENTOUT;
-	
+	bool newMapInfo = false;
+
 	// The main loop for monitoring LoL
 	while (instance->runMonitoring)
 	{
@@ -497,25 +498,30 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 				{
 					std::string mapString1 = map1Pointer.Deref(gameProcess, mapAddress, 5);
 					std::string mapString2 = map2Pointer.Deref(gameProcess, mapAddress, 5);
-					if (mapString1.compare("Map1") == 0 || mapString2.compare("Map1") == 0)
+					if (mapString1.compare("Map1") == 0 || mapString2.compare("Map1") == 0 ||
+						mapString1.compare("Map11") == 0 || mapString2.compare("Map11") == 0)
 					{
 						Log("INFO  | LolSceneSwitch::MonitorThread | Map is Summoners Rift!");
 						instance->currentMap = Map::SUMMONERS_RIFT;
+						newMapInfo = true;
 					}
 					else if (mapString1.compare("Map8") == 0 || mapString2.compare("Map8") == 0)
 					{
 						Log("INFO  | LolSceneSwitch::MonitorThread | Map is Crystal Scar!");
 						instance->currentMap = Map::CRYSTAL_SCAR;
+						newMapInfo = true;
 					}
 					else if (mapString1.compare("Map10") == 0 || mapString2.compare("Map10") == 0)
 					{
 						Log("INFO  | LolSceneSwitch::MonitorThread | Map is Twisted Treeline!");
 						instance->currentMap = Map::TWISTED_TREELINE;
+						newMapInfo = true;
 					}
 					else if (mapString1.compare("Map12") == 0 || mapString2.compare("Map12") == 0)
 					{
 						Log("INFO  | LolSceneSwitch::MonitorThread | Map is Howling Abyss!");
 						instance->currentMap = Map::HOWLING_ABYSS;
+						newMapInfo = true;
 					}
 				}
 
@@ -542,12 +548,13 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 			}
 		}
 
-		if (state != oldState)
+		if (state != oldState || newMapInfo)
 		{
 			// Something has changed!!!
 			Log("INFO  | LolSceneSwitch::MonitorThread | New state:", static_cast<long long>(state));
 
 			oldState = state;
+			newMapInfo = false;
 			instance->ChangeScene(state);
 		}
 		Sleep(INTERVALL);
@@ -575,16 +582,26 @@ State LogReader::GetState()
 		char buffer[BUFFER_SIZE];
 		char * found = nullptr;
 		DWORD bytesRead = 0;
-
+		
 		while (ReadFile(file, buffer, BUFFER_SIZE - 1, &bytesRead, nullptr) && bytesRead)
 		{
 			buffer[bytesRead] = '\0';
 			if ((found = strstr(buffer, searchStrings[index])) != nullptr)
 			{
-				SetFilePointer(file, -static_cast<signed int>(strlen(searchStrings[index])) + 1, nullptr, FILE_CURRENT);
+				SetFilePointer(file, -static_cast<signed long>(bytesRead) + (found - buffer + strlen(searchStrings[index])), nullptr, FILE_CURRENT);
 				index += 1;
 				if (index >= searchStrings.size())
 				{
+					// last message of interest has been read already
+					break;
+				}
+			}
+			else
+			{
+				SetFilePointer(file, -static_cast<signed long>(strlen(searchStrings[index])) + 1, nullptr, FILE_CURRENT);
+				if (bytesRead < BUFFER_SIZE - 1)
+				{
+					// nothing more to read here
 					break;
 				}
 			}
