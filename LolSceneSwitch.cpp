@@ -389,9 +389,9 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 	LogReader * reader = nullptr;
 
 	// Stuff for reading memory
-	PointerPath32 clienStatePointer({ -0x0000009C, 0x2f0, 0xaac, 0x9c, 0xd68 });
-	PointerPath32 map1Pointer({ -0x00000838, 0x20 });
-	PointerPath32 map2Pointer({ -0x0000083C, 0x20 });
+	PointerPath32 clienStatePointer({ -0x00000658, 0x78, 0x610, 0x4, 0xe48 });
+	PointerPath32 map1Pointer({ -0x00000658, 0x20 });
+	PointerPath32 map2Pointer({ -0x0000065C, 0x20 });
 	DWORD clientStateAddress = 0;
 	long clientState = 0;
 	DWORD mapAddress = 0;
@@ -434,7 +434,7 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 				}
 				if (clientStateAddress == 0)
 				{
-					clientStateAddress = PointerPath32::GetThreadAddress(clientProcess, clientPid, 1);
+					clientStateAddress = PointerPath32::GetThreadAddress(clientProcess, clientPid, 0);
 				}
 
 				if (clientWindow != nullptr && HasFocus(clientWindow))
