@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include "Settings.h"
 
 extern "C" __declspec(dllexport) bool LoadPlugin();
@@ -52,6 +53,9 @@ private:
 
 	HANDLE file;
 	unsigned int index = 0;
+
+	static unsigned int const BUFFER_SIZE = 256;
+	static std::array<char const *, 3> const searchStrings;
 
 public:
 

@@ -1,5 +1,4 @@
 #include "LolSceneSwitch.h"
-#include <array>
 #include <tchar.h>
 #include <strsafe.h>
 #include "SettingsDialog.h"
@@ -437,28 +436,32 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 					clientStateAddress = PointerPath32::GetThreadAddress(clientProcess, clientPid, 0);
 				}
 
-				if (clientWindow != nullptr && HasFocus(clientWindow))
+				if (!ingame)
 				{
-					if (clienStatePointer.Deref(clientProcess, clientStateAddress, clientState) && clientState == 1)
+					if (instance->settings.scenes[State::CLIENTOUT].single.IsEmpty() ||
+						(clientWindow != nullptr && HasFocus(clientWindow)))
 					{
-						if (postGame)
+						if (clienStatePointer.Deref(clientProcess, clientStateAddress, clientState) && clientState == 1)
 						{
-							state = State::POSTGAME;
+							if (postGame)
+							{
+								state = State::POSTGAME;
+							}
+							else
+							{
+								state = State::CHAMPSELECT;
+							}
 						}
 						else
 						{
-							state = State::CHAMPSELECT;
+							postGame = false;
+							state = State::CLIENT;
 						}
 					}
 					else
 					{
-						postGame = false;
-						state = State::CLIENT;
+						state = State::CLIENTOUT;
 					}
-				}
-				else if (!ingame)
-				{
-					state = State::CLIENTOUT;
 				}
 			}
 			else
@@ -525,7 +528,8 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 					}
 				}
 
-				if (gameWindow != nullptr && HasFocus(gameWindow) && reader != nullptr)
+				if (reader != nullptr && (instance->settings.scenes[State::GAMEOUT].single.IsEmpty() ||
+					(gameWindow != nullptr && HasFocus(gameWindow))))
 				{
 					state = reader->GetState();
 				}
@@ -565,6 +569,10 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 
 
 
+// search strings
+std::array<char const *, 3> const LogReader::searchStrings = { "Set focus to app",
+															   "HUDProcess", 
+															   "End game message processing!" };
 
 LogReader::LogReader(_In_ HANDLE file) : file(file)
 {
@@ -573,10 +581,6 @@ LogReader::LogReader(_In_ HANDLE file) : file(file)
 
 State LogReader::GetState()
 {
-	unsigned int const BUFFER_SIZE = 256;
-	std::array<char const *, 3> searchStrings = { { "Set focus to app",
-		"HUDProcess", "End game message processing!" } };
-
 	if (index < searchStrings.size())
 	{
 		char buffer[BUFFER_SIZE];
@@ -586,7 +590,8 @@ State LogReader::GetState()
 		while (ReadFile(file, buffer, BUFFER_SIZE - 1, &bytesRead, nullptr) && bytesRead)
 		{
 			buffer[bytesRead] = '\0';
-			if ((found = strstr(buffer, searchStrings[index])) != nullptr)
+			found = strstr(buffer, searchStrings[index]);
+			if (found != nullptr)
 			{
 				SetFilePointer(file, -static_cast<signed long>(bytesRead) + (found - buffer + strlen(searchStrings[index])), nullptr, FILE_CURRENT);
 				index += 1;
