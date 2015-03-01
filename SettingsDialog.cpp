@@ -1,5 +1,5 @@
 #include "SettingsDialog.h"
-#include <ShlObj.h>
+#include <Shlobj.h>
 #include <Shlwapi.h>
 #include <strsafe.h>
 #include "resource_main.h"
@@ -47,168 +47,6 @@ bool IsValidLoLPath(TCHAR const * path)
 		}
 	}
 }
-
-class OpenFolderDialog
-{
-private:
-
-	IFileDialog *pfd;
-	IFileDialogEvents *pfde;
-	DWORD dwCookie;
-
-public:
-
-	OpenFolderDialog(void);
-	~OpenFolderDialog(void);
-	bool Show(WCHAR * pszFilePath, HWND hWndParent);
-};
-
-#pragma region OpenFolderDialog
-class CDialogEventHandler : public IFileDialogEvents, public IFileDialogControlEvents
-{
-public:
-
-	// IUnknown methods
-	IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv)
-	{
-		static const QITAB qit[] = {
-			QITABENT(CDialogEventHandler, IFileDialogEvents),
-			QITABENT(CDialogEventHandler, IFileDialogControlEvents),
-			{ 0 },
-		};
-		return QISearch(this, qit, riid, ppv);
-	}
-
-	IFACEMETHODIMP_(ULONG) AddRef()
-	{
-		return InterlockedIncrement(&_cRef);
-	}
-
-	IFACEMETHODIMP_(ULONG) Release()
-	{
-		long cRef = InterlockedDecrement(&_cRef);
-		if (!cRef)
-			delete this;
-		return cRef;
-	}
-
-	// IFileDialogEvents methods
-	IFACEMETHODIMP OnFileOk(__RPC__in_opt IFileDialog *) { return S_OK; };
-	IFACEMETHODIMP OnFolderChange(__RPC__in_opt IFileDialog *) { return S_OK; };
-	IFACEMETHODIMP OnFolderChanging(__RPC__in_opt IFileDialog *, __RPC__in_opt IShellItem *) { return S_OK; };
-	IFACEMETHODIMP OnHelp(__RPC__in_opt IFileDialog *) { return S_OK; };
-	IFACEMETHODIMP OnSelectionChange(__RPC__in_opt IFileDialog *) { return S_OK; };
-	IFACEMETHODIMP OnShareViolation(__RPC__in_opt IFileDialog *, __RPC__in_opt IShellItem *, __RPC__in_opt FDE_SHAREVIOLATION_RESPONSE *) { return S_OK; };
-	IFACEMETHODIMP OnTypeChange(__RPC__in_opt IFileDialog *pfd) { return S_OK; };
-	IFACEMETHODIMP OnOverwrite(__RPC__in_opt IFileDialog *, __RPC__in_opt IShellItem *, __RPC__in_opt FDE_OVERWRITE_RESPONSE *) { return S_OK; };
-
-	// IFileDialogControlEvents methods
-	IFACEMETHODIMP OnItemSelected(__RPC__in_opt IFileDialogCustomize *pfdc, DWORD dwIDCtl, DWORD dwIDItem) { return S_OK; };
-	IFACEMETHODIMP OnButtonClicked(__RPC__in_opt IFileDialogCustomize *, DWORD) { return S_OK; };
-	IFACEMETHODIMP OnCheckButtonToggled(__RPC__in_opt IFileDialogCustomize *, DWORD, BOOL) { return S_OK; };
-	IFACEMETHODIMP OnControlActivating(__RPC__in_opt IFileDialogCustomize *, DWORD) { return S_OK; };
-
-	CDialogEventHandler() : _cRef(1) { };
-
-private:
-
-	~CDialogEventHandler() { };
-
-	long _cRef;
-};
-
-// Instance creation helper
-HRESULT CDialogEventHandler_CreateInstance(REFIID riid, void **ppv)
-{
-	*ppv = nullptr;
-	CDialogEventHandler *pDialogEventHandler = new (std::nothrow) CDialogEventHandler();
-	HRESULT hr = pDialogEventHandler ? S_OK : E_OUTOFMEMORY;
-	if (SUCCEEDED(hr))
-	{
-		hr = pDialogEventHandler->QueryInterface(riid, ppv);
-		pDialogEventHandler->Release();
-	}
-	return hr;
-}
-
-OpenFolderDialog::OpenFolderDialog(void)
-{
-	if (SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
-	{
-		pfd = nullptr;
-		pfde = nullptr;
-		// CoCreate the File Open Dialog object.
-		HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pfd));
-
-		if (SUCCEEDED(hr))
-		{
-			// Create an event handling object, and hook it up to the dialog.
-			hr = CDialogEventHandler_CreateInstance(IID_PPV_ARGS(&pfde));
-			if (SUCCEEDED(hr))
-			{
-				// Hook up the event handler.
-				hr = pfd->Advise(pfde, &dwCookie);
-				if (SUCCEEDED(hr))
-				{
-					// Set the options on the dialog.
-					DWORD dwFlags;
-
-					// Before setting, always get the options first in order 
-					// not to override existing options.
-					hr = pfd->GetOptions(&dwFlags);
-					if (SUCCEEDED(hr))
-					{
-						// In this case, get shell items only for file system items.
-						hr = pfd->SetOptions(dwFlags | FOS_PICKFOLDERS);
-					}
-				}
-			}
-		}
-		CoUninitialize();
-	}
-}
-
-bool OpenFolderDialog::Show(WCHAR * path, HWND hWndParent)
-{
-	// Show the dialog
-	HRESULT hr = pfd->Show(hWndParent);
-
-	if (SUCCEEDED(hr))
-	{
-		// Obtain the result once the user clicks 
-		// the 'Open' button.
-		// The result is an IShellItem object.
-		IShellItem *psiResult;
-		hr = pfd->GetResult(&psiResult);
-
-		if (SUCCEEDED(hr))
-		{
-			LPWSTR folderPath;
-			hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH, &folderPath);
-
-			if (folderPath != nullptr)
-			{
-				StringCchCopy(path, MAX_PATH, folderPath);
-				if (SUCCEEDED(hr))
-				{
-					CoTaskMemFree(folderPath);
-					return true;
-				}
-			}
-			psiResult->Release();
-		}
-	}
-
-	return false;
-}
-
-OpenFolderDialog::~OpenFolderDialog(void)
-{
-	pfd->Unadvise(dwCookie);
-	pfde->Release();
-	pfd->Release();
-}
-#pragma endregion
 
 
 
@@ -493,18 +331,34 @@ INT_PTR CALLBACK SettingsDialog::ConfigDlgProc(_In_ HWND hWnd, UINT message, WPA
 					break;
 				case IDC_BTN_LOLPATH:
 				{
-					OpenFolderDialog ofd = OpenFolderDialog();
 					WCHAR folder[MAX_PATH];
-					if (ofd.Show(folder, hWnd) && IsValidLoLPath(folder))
+
+					BROWSEINFO bInfo;
+					bInfo.hwndOwner = hWnd;
+					bInfo.pidlRoot = NULL;
+					bInfo.pszDisplayName = folder;
+					bInfo.lpszTitle = TEXT("Select your League of Legends folder.");
+					bInfo.ulFlags = BIF_NONEWFOLDERBUTTON | BIF_NEWDIALOGSTYLE | BIF_RETURNONLYFSDIRS;
+					bInfo.lpfn = NULL;
+					bInfo.lParam = NULL;
+
+					LPITEMIDLIST lpItem = SHBrowseForFolder(&bInfo);
+					if (lpItem != NULL)
 					{
-						SendDlgItemMessageW(hWnd, IDC_TXT_LOLPATH, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(folder));
-					}
-					else
-					{
-						MessageBox(hWnd,
-							TEXT("The selected folder is not a valid League of Legends folder!"),
-							TEXT("Invalid Folder"),
-							MB_OK | MB_ICONERROR);
+						SHGetPathFromIDList(lpItem, folder);
+						CoTaskMemFree(lpItem);
+
+						if (IsValidLoLPath(folder))
+						{
+							SendDlgItemMessage(hWnd, IDC_TXT_LOLPATH, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(folder));
+						}
+						else
+						{
+							MessageBox(hWnd,
+									   TEXT("The selected folder is not a valid League of Legends folder!"),
+									   TEXT("Invalid Folder"),
+									   MB_OK | MB_ICONERROR);
+						}
 					}
 					break;
 				}
