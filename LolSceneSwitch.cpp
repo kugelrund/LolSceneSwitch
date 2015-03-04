@@ -40,7 +40,7 @@ bool LoadPlugin()
 
 	InitLog(OBSGetPluginDataPath());
 	plugin = new LolSceneSwitch();
-	Log("INFO  | Loaded LolSceneSwitch v0.2 Alpha 6");
+	Log("INFO  | Loaded LolSceneSwitch v0.2 Alpha 7");
 	return true;
 }
 
