@@ -225,17 +225,21 @@ std::string PointerPath32::Deref(_In_ HANDLE process, DWORD base, unsigned int c
 	DWORD pointer = DerefOffsets(process, base);
 	SIZE_T read = 0;
 
-	char * buffer = new char[LENGTH];
+	char * buffer = new char[LENGTH + 1];
 	if (!ReadProcessMemory(process, reinterpret_cast<void *>(pointer), buffer, LENGTH, &read))
 	{
-		buffer[0] = 0;
+		buffer[0] = '\0';
 	}
 	else if (read != LENGTH)
 	{
 		Log("WARNING | PointerPath::Deref | Didn't finish while reading string at ", pointer, true);
 	}
 
+	// make sure the string terminates
+	buffer[LENGTH] = '\0';
+
 	std::string str = std::string(buffer);
+	delete[] buffer;
 	return str;
 }
 
