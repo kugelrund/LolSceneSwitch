@@ -572,7 +572,7 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 
 // search strings
 std::array<char const *, 3> const LogReader::searchStrings = { "Set focus to app",
-															   "HUDProcess", 
+															   "Start Main Loop", 
 															   "End game message processing!" };
 
 LogReader::LogReader(_In_ HANDLE file) : file(file)
