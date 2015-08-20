@@ -390,8 +390,8 @@ DWORD WINAPI LolSceneSwitch::MonitorThread(_In_ LPVOID lpParam)
 
 	// Stuff for reading memory
 	PointerPath32 clienStatePointer({ -0x658, 0x78, 0x614, 0x4, 0x4C8 });
-	PointerPath32 map1Pointer({ -0x65C, 0x20 });
-	PointerPath32 map2Pointer({ -0x660, 0x20 });
+	PointerPath32 map1Pointer({ -0x780, 0x20 });
+	PointerPath32 map2Pointer({ -0x784, 0x20 });
 	DWORD clientStateAddress = 0;
 	long clientState = 0;
 	DWORD mapAddress = 0;
